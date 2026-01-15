@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习交互网站 - 智能知识解答</title>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="home.html" class="navbar-brand">智能学习交互网站</a>
+            <div class="user-info">
+                <span class="user-name" id="user-name">欢迎，用户</span>
+                <button id="logout-btn" class="logout-btn">
+                    <i class="fa fa-sign-out"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <div class="container">
+        <h1 class="text-center" style="margin-top: 30px;">智能知识解答系统</h1>
+        
+        <div class="knowledge-container">
+            <!-- 历史对话记录 -->
+            <div class="history-section">
+                <h2 class="history-title">历史对话</h2>
+                
+                <ul id="history-list" class="history-list">
+                    <!-- 历史对话记录将通过API动态加载 -->
+                    <li class="text-center" style="margin-top: 30px; color: #999;">
+                        <i class="fa fa-info-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <p>暂无历史对话记录</p>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- 对话交互区 -->
+            <div class="chat-section">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="text-center" style="margin-top: 50px; color: #999;">
+                        <i class="fa fa-comments" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <p>开始您的提问，智能系统将为您解答</p>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <div class="input-group">
+                        <textarea id="chat-textarea" class="chat-textarea" placeholder="输入您的问题..."></textarea>
+                        <button id="upload-btn" class="upload-btn" title="上传图片">
+                            <i class="fa fa-image"></i>
+                        </button>
+                        <button id="send-btn" class="send-btn">
+                            <i class="fa fa-paper-plane"></i> 发送
+                        </button>
+                    </div>
+                    
+                    <!-- 图片上传预览区域 -->
+                    <div id="preview-container" class="preview-container" style="display: none;">
+                        <img id="preview-image" class="preview-image" src="" alt="预览图片">
+                        <button id="remove-image" class="remove-image">×</button>
+                        <input type="file" id="image-input" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <!-- <footer class="footer">
+        <div class="container">
+            <div class="footer-col">
+                <h3>关于我们</h3>
+                <p>智能学习交互网站致力于为学生提供高效、个性化的学习体验，通过人工智能技术提升学习效果。</p>
+            </div>
+            <div class="footer-col">
+                <h3>联系方式</h3>
+                <ul>
+                    <li>邮箱：contact@smartlearning.com</li>
+                    <li>电话：400-123-4567</li>
+                    <li>地址：北京市海淀区中关村科技园</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>快速链接</h3>
+                <ul>
+                    <li><a href="home.html">首页</a></li>
+                    <li><a href="question-generate.html">智能出题</a></li>
+                    <li><a href="knowledge-answer.html">智能知识解答</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 智能学习交互网站 版权所有</p>
+        </div>
+    </footer> -->
+    
+    <!-- API文件 -->
+    <script src="api.js"></script>
+    
+    <!-- 页面脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const userName = document.getElementById('user-name');
+            const logoutBtn = document.getElementById('logout-btn');
+            const historyList = document.getElementById('history-list');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatTextarea = document.getElementById('chat-textarea');
+            const uploadBtn = document.getElementById('upload-btn');
+            const sendBtn = document.getElementById('send-btn');
+            const previewContainer = document.getElementById('preview-container');
+            const previewImage = document.getElementById('preview-image');
+            const removeImage = document.getElementById('remove-image');
+            const imageInput = document.getElementById('image-input');
+            
+            // 当前会话ID
+            let currentSessionId = null;
+            
+            // 存储当前图片数据
+            let currentImageData = null;
+            
+            // 检查用户是否已登录
+            if (!api.user.isLoggedIn()) {
+                // 如果未登录，跳转到登录页面
+                // window.location.href = 'login.html';
+                return;
+            }
+            
+            // 获取当前用户信息并显示
+            const currentUser = api.user.getCurrentUser();
+            if (currentUser && currentUser.studentId) {
+                userName.textContent = `欢迎，${currentUser.studentId}`;
+            }
+            
+            // 退出登录按钮点击事件
+            logoutBtn.addEventListener('click', function() {
+                // 调用退出登录API
+                api.user.logout();
+                
+                // 跳转到登录页面
+                window.location.href = 'login.html';
+            });
+            
+            // 加载历史对话记录
+            function loadHistoryConversations() {
+                // 调用API获取历史对话记录
+                api.knowledge.getHistoryConversations()
+                    .then(data => {
+                        if (data.success && data.data && data.data.conversations) {
+                            renderHistoryList(data.data.conversations);
+                        } else {
+                            // 没有历史记录
+                            historyList.innerHTML = `
+                                <li class="text-center" style="margin-top: 30px; color: #999;">
+                                    <i class="fa fa-info-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                    <p>暂无历史对话记录</p>
+                                </li>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Load history conversations error:', error);
+                        // 模拟数据（仅用于演示）
+                        const mockConversations = [
+                            {
+                                id: 'conv_1',
+                                title: '关于二次函数的问题',
+                                timestamp: Date.now() - 3600000 // 1小时前
+                            },
+                            {
+                                id: 'conv_2',
+                                title: '物理力学计算题',
+                                timestamp: Date.now() - 86400000 // 1天前
+                            },
+                            {
+                                id: 'conv_3',
+                                title: '化学方程式配平方法',
+                                timestamp: Date.now() - 172800000 // 2天前
+                            }
+                        ];
+                        
+                        renderHistoryList(mockConversations);
+                    });
+            }
+            
+            // 渲染历史对话列表
+            function renderHistoryList(conversations) {
+                if (!conversations || conversations.length === 0) {
+                    historyList.innerHTML = `
+                        <li class="text-center" style="margin-top: 30px; color: #999;">
+                            <i class="fa fa-info-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                            <p>暂无历史对话记录</p>
+                        </li>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                conversations.forEach(conversation => {
+                    const date = new Date(conversation.timestamp);
+                    const timeText = formatDateTime(date);
+                    
+                    html += `
+                        <li class="history-item" data-conversation-id="${conversation.id}">
+                            <div class="history-item-title">${conversation.title}</div>
+                            <div class="history-item-time">${timeText}</div>
+                        </li>
+                    `;
+                });
+                
+                historyList.innerHTML = html;
+                
+                // 添加历史对话点击事件
+                const historyItems = document.querySelectorAll('.history-item');
+                historyItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const conversationId = this.getAttribute('data-conversation-id');
+                        loadConversationDetail(conversationId);
+                        
+                        // 移除其他项的active类
+                        historyItems.forEach(i => i.classList.remove('active'));
+                        // 添加active类
+                        this.classList.add('active');
+                    });
+                });
+            }
+            
+            // 加载对话详情
+            function loadConversationDetail(conversationId) {
+                // 显示加载状态
+                chatMessages.innerHTML = `
+                    <div class="text-center" style="margin-top: 50px;">
+                        <i class="fa fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <p>正在加载对话记录，请稍候...</p>
+                    </div>
+                `;
+                
+                // 调用API获取对话详情
+                api.knowledge.getConversationDetail(conversationId)
+                    .then(data => {
+                        if (data.success && data.data && data.data.messages) {
+                            // 设置当前会话ID
+                            currentSessionId = conversationId;
+                            
+                            // 渲染对话消息
+                            renderChatMessages(data.data.messages);
+                        } else {
+                            // 加载失败
+                            chatMessages.innerHTML = `
+                                <div class="text-center" style="margin-top: 50px; color: #ff4d4f;">
+                                    <i class="fa fa-exclamation-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                                    <p>对话记录加载失败，请重试</p>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Load conversation detail error:', error);
+                        // 模拟数据（仅用于演示）
+                        const mockMessages = [
+                            {
+                                role: 'user',
+                                content: '什么是二次函数？请详细解释一下。',
+                                timestamp: Date.now() - 3600000
+                            },
+                            {
+                                role: 'assistant',
+                                content: '二次函数是指最高次数为2的多项式函数，一般形式为：f(x) = ax² + bx + c，其中a、b、c为常数且a≠0。\n\n二次函数的图像是一条抛物线，当a>0时，抛物线开口向上；当a<0时，抛物线开口向下。\n\n二次函数的主要性质：\n1. 对称轴：x = -b/(2a)\n2. 顶点坐标：(-b/(2a), f(-b/(2a)))\n3. 判别式：Δ = b² - 4ac\n   - Δ>0时，函数有两个不同的实数根\n   - Δ=0时，函数有一个重根\n   - Δ<0时，函数没有实数根',
+                                timestamp: Date.now() - 3590000
+                            },
+                            {
+                                role: 'user',
+                                content: '那如何求二次函数的最大值或最小值呢？',
+                                timestamp: Date.now() - 3580000
+                            },
+                            {
+                                role: 'assistant',
+                                content: '求二次函数的最大值或最小值可以通过以下方法：\n\n1. 利用顶点公式：\n   对于f(x) = ax² + bx + c，顶点坐标为(-b/(2a), f(-b/(2a)))\n   - 当a>0时，顶点是最小值点，最小值为f(-b/(2a))\n   - 当a<0时，顶点是最大值点，最大值为f(-b/(2a))\n\n2. 配方法：\n   将二次函数配方为f(x) = a(x-h)² + k的形式\n   - 当a>0时，最小值为k（在x=h处取得）\n   - 当a<0时，最大值为k（在x=h处取得）\n\n例如：求f(x) = x² - 4x + 5的最小值\n配方得：f(x) = (x-2)² + 1\n所以当x=2时，f(x)取得最小值1',
+                                timestamp: Date.now() - 3570000
+                            }
+                        ];
+                        
+                        // 设置当前会话ID
+                        currentSessionId = conversationId;
+                        
+                        // 渲染对话消息
+                        renderChatMessages(mockMessages);
+                    });
+            }
+            
+            // 渲染聊天消息
+            function renderChatMessages(messages) {
+                if (!messages || messages.length === 0) {
+                    chatMessages.innerHTML = `
+                        <div class="text-center" style="margin-top: 50px; color: #999;">
+                            <i class="fa fa-comments" style="font-size: 48px; margin-bottom: 20px;"></i>
+                            <p>暂无对话消息</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                messages.forEach(message => {
+                    const date = new Date(message.timestamp);
+                    const timeText = formatDateTime(date);
+                    
+                    html += `
+                        <div class="message message-${message.role}">
+                            <div class="message-content">
+                                ${message.content.replace(/\n/g, '<br>')}
+                                ${message.image ? `<img src="${message.image}" class="message-image" alt="图片">` : ''}
+                                <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">${timeText}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                chatMessages.innerHTML = html;
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // 发送消息
+            function sendMessage() {
+                const content = chatTextarea.value.trim();
+                
+                // 验证输入内容
+                if (!content && !currentImageData) {
+                    alert('请输入问题或上传图片');
+                    return;
+                }
+                
+                // 显示发送中状态
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 发送中';
+                
+                // 添加用户消息到聊天区
+                const userMessage = {
+                    role: 'user',
+                    content: content,
+                    timestamp: Date.now(),
+                    image: currentImageData
+                };
+                
+                // 如果聊天区是空的，初始化聊天界面
+                if (chatMessages.querySelector('.text-center')) {
+                    chatMessages.innerHTML = '';
+                }
+                
+                // 添加用户消息
+                const date = new Date(userMessage.timestamp);
+                const timeText = formatDateTime(date);
+                
+                let userMessageHtml = `
+                    <div class="message message-user">
+                        <div class="message-content">
+                            ${userMessage.content.replace(/\n/g, '<br>')}
+                            ${userMessage.image ? `<img src="${userMessage.image}" class="message-image" alt="图片">` : ''}
+                            <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">${timeText}</div>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.innerHTML += userMessageHtml;
+                
+                // 清空输入框和图片预览
+                chatTextarea.value = '';
+                clearImagePreview();
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // 添加AI正在输入的提示
+                const typingHtml = `
+                    <div class="message message-assistant" id="typing-indicator">
+                        <div class="message-content">
+                            <i class="fa fa-spinner fa-spin"></i> 正在思考...
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.innerHTML += typingHtml;
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // 调用API发送问题
+                api.knowledge.askQuestion(content, currentImageData, currentSessionId)
+                    .then(data => {
+                        // 移除正在输入的提示
+                        const typingIndicator = document.getElementById('typing-indicator');
+                        if (typingIndicator) {
+                            typingIndicator.remove();
+                        }
+                        
+                        if (data.success && data.data) {
+                            // 设置当前会话ID
+                            if (data.data.sessionId) {
+                                currentSessionId = data.data.sessionId;
+                            }
+                            
+                            // 添加AI回复
+                            const aiMessage = {
+                                role: 'assistant',
+                                content: data.data.answer,
+                                timestamp: Date.now()
+                            };
+                            
+                            const aiDate = new Date(aiMessage.timestamp);
+                            const aiTimeText = formatDateTime(aiDate);
+                            
+                            let aiMessageHtml = `
+                                <div class="message message-assistant">
+                                    <div class="message-content">
+                                        ${aiMessage.content.replace(/\n/g, '<br>')}
+                                        <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">${aiTimeText}</div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            chatMessages.innerHTML += aiMessageHtml;
+                            
+                            // 滚动到底部
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            
+                            // 重新加载历史对话列表
+                            loadHistoryConversations();
+                        } else {
+                            // 添加错误消息
+                            let errorMessageHtml = `
+                                <div class="message message-assistant">
+                                    <div class="message-content">
+                                        抱歉，我无法理解您的问题，请换一种方式提问。
+                                        <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">${timeText}</div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            chatMessages.innerHTML += errorMessageHtml;
+                            
+                            // 滚动到底部
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ask question error:', error);
+                        
+                        // 移除正在输入的提示
+                        const typingIndicator = document.getElementById('typing-indicator');
+                        if (typingIndicator) {
+                            typingIndicator.remove();
+                        }
+                        
+                        // 模拟AI回复（仅用于演示）
+                        let mockAnswer = '';
+                        
+                        if (content.includes('二次函数')) {
+                            mockAnswer = '二次函数是指最高次数为2的多项式函数，一般形式为：f(x) = ax² + bx + c，其中a、b、c为常数且a≠0。\n\n二次函数的图像是一条抛物线，当a>0时，抛物线开口向上；当a<0时，抛物线开口向下。\n\n二次函数的主要性质：\n1. 对称轴：x = -b/(2a)\n2. 顶点坐标：(-b/(2a), f(-b/(2a)))\n3. 判别式：Δ = b² - 4ac\n   - Δ>0时，函数有两个不同的实数根\n   - Δ=0时，函数有一个重根\n   - Δ<0时，函数没有实数根';
+                        } else if (content.includes('物理') || content.includes('力学')) {
+                            mockAnswer = '力学是物理学的一个分支，主要研究物体的运动和力的作用。\n\n力学的基本概念包括：\n1. 力：物体间的相互作用，可以改变物体的运动状态或使物体发生形变\n2. 质量：物体所含物质的多少，是物体惯性大小的量度\n3. 加速度：物体速度变化率的物理量\n\n牛顿三大定律是力学的基础：\n1. 牛顿第一定律（惯性定律）：一个物体如果不受外力作用，将保持静止状态或匀速直线运动状态\n2. 牛顿第二定律：物体的加速度与所受的合外力成正比，与物体的质量成反比\n3. 牛顿第三定律：作用力与反作用力大小相等，方向相反，作用在不同物体上';
+                        } else if (content.includes('化学') || content.includes('方程式')) {
+                            mockAnswer = '化学方程式是用化学式表示化学反应的式子，它反映了化学反应中反应物和生成物之间的质量关系和物质的量关系。\n\n化学方程式的配平原则：\n1. 质量守恒定律：反应前后各元素的原子种类和数目不变\n2. 电荷守恒：对于离子反应，反应前后电荷总数相等\n\n配平化学方程式的常用方法：\n1. 观察法：通过观察直接配平简单的化学方程式\n2. 最小公倍数法：找出反应前后各元素原子数的最小公倍数进行配平\n3. 奇数配偶法：将奇数原子变为偶数，再进行配平\n4. 氧化还原法：根据氧化还原反应中电子转移的数目进行配平';
+                        } else {
+                            mockAnswer = '您好！我是智能学习助手，可以帮您解答各种学习问题。请输入您的具体问题，我会尽力为您提供详细的解答。您也可以上传相关图片，我会结合图片内容为您解答。';
+                        }
+                        
+                        // 设置当前会话ID（如果没有）
+                        if (!currentSessionId) {
+                            currentSessionId = 'conv_' + Date.now();
+                        }
+                        
+                        // 添加AI回复
+                        const aiMessage = {
+                            role: 'assistant',
+                            content: mockAnswer,
+                            timestamp: Date.now()
+                        };
+                        
+                        const aiDate = new Date(aiMessage.timestamp);
+                        const aiTimeText = formatDateTime(aiDate);
+                        
+                        let aiMessageHtml = `
+                            <div class="message message-assistant">
+                                <div class="message-content">
+                                    ${aiMessage.content.replace(/\n/g, '<br>')}
+                                    <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">${aiTimeText}</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        chatMessages.innerHTML += aiMessageHtml;
+                        
+                        // 滚动到底部
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        
+                        // 重新加载历史对话列表
+                        loadHistoryConversations();
+                    })
+                    .finally(() => {
+                        // 恢复按钮状态
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i> 发送';
+                    });
+            }
+            
+            // 格式化日期时间
+            function formatDateTime(date) {
+                const now = new Date();
+                const diff = now - date;
+                
+                // 小于1分钟
+                if (diff < 60000) {
+                    return '刚刚';
+                }
+                // 小于1小时
+                else if (diff < 3600000) {
+                    return Math.floor(diff / 60000) + '分钟前';
+                }
+                // 小于24小时
+                else if (diff < 86400000) {
+                    return Math.floor(diff / 3600000) + '小时前';
+                }
+                // 小于7天
+                else if (diff < 604800000) {
+                    return Math.floor(diff / 86400000) + '天前';
+                }
+                // 其他情况显示具体日期
+                else {
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    
+                    return `${year}-${month}-${day} ${hours}:${minutes}`;
+                }
+            }
+            
+            // 显示图片预览
+            function showImagePreview(file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // 存储图片数据
+                    currentImageData = e.target.result;
+                    
+                    // 显示预览
+                    previewImage.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // 清除图片预览
+            function clearImagePreview() {
+                currentImageData = null;
+                previewImage.src = '';
+                previewContainer.style.display = 'none';
+            }
+            
+            // 发送按钮点击事件
+            sendBtn.addEventListener('click', sendMessage);
+            
+            // 文本框回车发送（按住Shift键可以换行）
+            chatTextarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 上传按钮点击事件
+            uploadBtn.addEventListener('click', function() {
+                imageInput.click();
+            });
+            
+            // 图片选择事件
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    // 检查文件大小（限制为5MB）
+                    if (this.files[0].size > 5 * 1024 * 1024) {
+                        alert('图片大小不能超过5MB');
+                        return;
+                    }
+                    
+                    // 检查文件类型
+                    if (!this.files[0].type.match('image.*')) {
+                        alert('请选择图片文件');
+                        return;
+                    }
+                    
+                    showImagePreview(this.files[0]);
+                }
+            });
+            
+            // 移除图片按钮点击事件
+            removeImage.addEventListener('click', clearImagePreview);
+            
+            // 支持粘贴图片
+            document.addEventListener('paste', function(e) {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        showImagePreview(file);
+                        break;
+                    }
+                }
+            });
+            
+            // 初始化页面
+            loadHistoryConversations();
+        });
+    </script>
+</body>
+</html>

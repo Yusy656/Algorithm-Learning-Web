@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习交互网站 - 首页</title>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="home.html" class="navbar-brand">智能学习交互网站</a>
+            <div class="user-info">
+                <span class="user-name" id="user-name">欢迎，用户</span>
+                <button id="logout-btn" class="logout-btn">
+                    <i class="fa fa-sign-out"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <div class="container home-container">
+        <h1 class="text-center">欢迎使用智能学习交互系统</h1>
+        <p class="text-center">选择下方功能开始您的智能学习之旅</p>
+        
+        <div class="feature-cards">
+            <!-- 智能出题功能卡片 -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fa fa-question-circle"></i>
+                </div>
+                <h2 class="feature-title">智能出题</h2>
+                <p class="feature-description">
+                    根据您选择的知识点、难度和题型，智能生成个性化练习题，帮助您巩固所学知识。
+                </p>
+                <a href="question-generate.html" class="btn">开始练习</a>
+            </div>
+            
+            <!-- 智能知识解答功能卡片 -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fa fa-comments"></i>
+                </div>
+                <h2 class="feature-title">智能知识解答</h2>
+                <p class="feature-description">
+                    遇到不懂的问题？上传图片或输入文字，智能系统将为您提供详细解答和知识点解析。
+                </p>
+                <a href="knowledge-answer.html" class="btn">开始提问</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-col">
+                <h3>关于我们</h3>
+                <p>智能学习交互网站致力于为学生提供高效、个性化的学习体验，通过人工智能技术提升学习效果。</p>
+            </div>
+            <div class="footer-col">
+                <h3>联系方式</h3>
+                <ul>
+                    <li>邮箱：contact@smartlearning.com</li>
+                    <li>电话：400-123-4567</li>
+                    <li>地址：北京市海淀区中关村科技园</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>快速链接</h3>
+                <ul>
+                    <li><a href="home.html">首页</a></li>
+                    <li><a href="question-generate.html">智能出题</a></li>
+                    <li><a href="knowledge-answer.html">智能知识解答</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 智能学习交互网站 版权所有</p>
+        </div>
+    </footer> -->
+    
+    <!-- API文件 -->
+    <script src="api.js"></script>
+    
+    <!-- 页面脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const userName = document.getElementById('user-name');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            // 检查用户是否已登录
+            if (!api.user.isLoggedIn()) {
+                // 如果未登录，跳转到登录页面
+                // window.location.href = 'login.html';
+                return;
+            }
+            
+            // 获取当前用户信息并显示
+            const currentUser = api.user.getCurrentUser();
+            if (currentUser && currentUser.studentId) {
+                userName.textContent = `欢迎，${currentUser.studentId}`;
+            }
+            
+            // 退出登录按钮点击事件
+            logoutBtn.addEventListener('click', function() {
+                // 调用退出登录API
+                api.user.logout();
+                
+                // 跳转到登录页面
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

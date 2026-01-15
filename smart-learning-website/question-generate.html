@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习交互网站 - 智能出题</title>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="home.html" class="navbar-brand">智能学习交互网站</a>
+            <div class="user-info">
+                <span class="user-name" id="user-name">欢迎，用户</span>
+                <button id="logout-btn" class="logout-btn">
+                    <i class="fa fa-sign-out"></i> 退出
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <div class="container">
+        <h1 class="text-center" style="margin-top: 30px;">智能出题系统</h1>
+        
+        <div class="question-container">
+            <!-- 筛选区 -->
+            <div class="filter-section">
+                <h2 class="filter-title">题目筛选</h2>
+                
+                <div class="filter-group">
+                    <label for="knowledge-point" class="filter-label">知识点</label>
+                    <select id="knowledge-point" class="filter-select">
+                        <option value="">请选择知识点</option>
+                        <!-- 知识点选项将通过API动态加载 -->
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="difficulty" class="filter-label">难度</label>
+                    <select id="difficulty" class="filter-select">
+                        <option value="simple">简单</option>
+                        <option value="medium">中等</option>
+                        <option value="difficult">困难</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="question-type" class="filter-label">题型</label>
+                    <select id="question-type" class="filter-select">
+                        <option value="single_choice">单选题</option>
+                        <option value="multiple_choice">多选题</option>
+                        <option value="fill_blank">填空题</option>
+                        <option value="essay">解答题</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="question-count" class="filter-label">题目数量</label>
+                    <select id="question-count" class="filter-select">
+                        <option value="1">1题</option>
+                        <option value="2">2题</option>
+                        <option value="3">3题</option>
+                        <option value="4">4题</option>
+                        <option value="5">5题</option>
+                        <option value="6">6题</option>
+                        <option value="7">7题</option>
+                        <option value="8">8题</option>
+                        <option value="9">9题</option>
+                        <option value="10">10题</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="expansion-level" class="filter-label">知识拓展度</label>
+                    <select id="expansion-level" class="filter-select">
+                        <option value="simple">简单</option>
+                        <option value="medium">中等</option>
+                        <option value="difficult">困难</option>
+                    </select>
+                </div>
+                
+                <button id="generate-btn" class="btn generate-btn">
+                    <i class="fa fa-refresh"></i> 生成题目
+                </button>
+            </div>
+            
+            <!-- 答题区 -->
+            <div class="question-section">
+                <div class="score-box" id="score-box" style="display: none;">
+                    得分：<span id="score">0</span>
+                </div>
+                
+                <div id="question-list" class="question-list">
+                    <div class="text-center" style="margin-top: 50px; color: #999;">
+                        <i class="fa fa-info-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <p>请在左侧选择筛选条件并点击"生成题目"按钮</p>
+                    </div>
+                </div>
+                
+                <button id="submit-btn" class="btn submit-btn" style="display: none;">
+                    <i class="fa fa-paper-plane"></i> 提交答案
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <!-- <footer class="footer">
+        <div class="container">
+            <div class="footer-col">
+                <h3>关于我们</h3>
+                <p>智能学习交互网站致力于为学生提供高效、个性化的学习体验，通过人工智能技术提升学习效果。</p>
+            </div>
+            <div class="footer-col">
+                <h3>联系方式</h3>
+                <ul>
+                    <li>邮箱：contact@smartlearning.com</li>
+                    <li>电话：400-123-4567</li>
+                    <li>地址：北京市海淀区中关村科技园</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>快速链接</h3>
+                <ul>
+                    <li><a href="home.html">首页</a></li>
+                    <li><a href="question-generate.html">智能出题</a></li>
+                    <li><a href="knowledge-answer.html">智能知识解答</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 智能学习交互网站 版权所有</p>
+        </div>
+    </footer> -->
+    
+    <!-- API文件 -->
+    <script src="api.js"></script>
+    
+    <!-- 页面脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const userName = document.getElementById('user-name');
+            const logoutBtn = document.getElementById('logout-btn');
+            const knowledgePointSelect = document.getElementById('knowledge-point');
+            const difficultySelect = document.getElementById('difficulty');
+            const questionTypeSelect = document.getElementById('question-type');
+            const questionCountSelect = document.getElementById('question-count');
+            const expansionLevelSelect = document.getElementById('expansion-level');
+            const generateBtn = document.getElementById('generate-btn');
+            const questionList = document.getElementById('question-list');
+            const submitBtn = document.getElementById('submit-btn');
+            const scoreBox = document.getElementById('score-box');
+            const scoreSpan = document.getElementById('score');
+            
+            // 存储当前题目数据
+            let currentQuestions = [];
+            
+            // 检查用户是否已登录
+            if (!api.user.isLoggedIn()) {
+                // 如果未登录，跳转到登录页面
+                // window.location.href = 'login.html';
+                return;
+            }
+            
+            // 获取当前用户信息并显示
+            const currentUser = api.user.getCurrentUser();
+            if (currentUser && currentUser.studentId) {
+                userName.textContent = `欢迎，${currentUser.studentId}`;
+            }
+            
+            // 退出登录按钮点击事件
+            logoutBtn.addEventListener('click', function() {
+                // 调用退出登录API
+                api.user.logout();
+                
+                // 跳转到登录页面
+                window.location.href = 'login.html';
+            });
+            
+            // 加载知识点列表
+            function loadKnowledgePoints() {
+                // 显示加载状态
+                knowledgePointSelect.innerHTML = '<option value="">加载中...</option>';
+                
+                // 调用API获取知识点列表
+                api.question.getKnowledgePoints()
+                    .then(data => {
+                        if (data.success && data.data && data.data.knowledgePoints) {
+                            // 清空选择框
+                            knowledgePointSelect.innerHTML = '<option value="">请选择知识点</option>';
+                            
+                            // 添加知识点选项
+                            data.data.knowledgePoints.forEach(point => {
+                                const option = document.createElement('option');
+                                option.value = point.id;
+                                option.textContent = point.name;
+                                knowledgePointSelect.appendChild(option);
+                            });
+                        } else {
+                            // 加载失败，显示错误信息
+                            knowledgePointSelect.innerHTML = '<option value="">加载失败，请重试</option>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Load knowledge points error:', error);
+                        // 模拟数据（仅用于演示）
+                        const mockKnowledgePoints = [
+                            { id: '1', name: '数学 - 代数' },
+                            { id: '2', name: '数学 - 几何' },
+                            { id: '3', name: '物理 - 力学' },
+                            { id: '4', name: '物理 - 电学' },
+                            { id: '5', name: '化学 - 元素周期表' },
+                            { id: '6', name: '化学 - 化学反应' }
+                        ];
+                        
+                        // 清空选择框
+                        knowledgePointSelect.innerHTML = '<option value="">请选择知识点</option>';
+                        
+                        // 添加模拟知识点选项
+                        mockKnowledgePoints.forEach(point => {
+                            const option = document.createElement('option');
+                            option.value = point.id;
+                            option.textContent = point.name;
+                            knowledgePointSelect.appendChild(option);
+                        });
+                    });
+            }
+            
+            // 生成题目
+            function generateQuestions() {
+                // 获取筛选条件
+                const knowledgePointId = knowledgePointSelect.value;
+                const difficulty = difficultySelect.value;
+                const questionType = questionTypeSelect.value;
+                const count = parseInt(questionCountSelect.value);
+                const expansionLevel = expansionLevelSelect.value;
+                
+                // 验证知识点是否选择
+                if (!knowledgePointId) {
+                    alert('请选择知识点');
+                    return;
+                }
+                
+                // 显示加载状态
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 生成中...';
+                questionList.innerHTML = '<div class="text-center" style="margin-top: 50px;"><i class="fa fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 20px;"></i><p>正在生成题目，请稍候...</p></div>';
+                submitBtn.style.display = 'none';
+                scoreBox.style.display = 'none';
+                
+                // 调用API生成题目
+                api.question.generateQuestions(knowledgePointId, difficulty, questionType, count, expansionLevel)
+                    .then(data => {
+                        if (data.success && data.data && data.data.questions) {
+                            // 存储当前题目数据
+                            currentQuestions = data.data.questions;
+                            
+                            // 渲染题目列表
+                            renderQuestions(currentQuestions);
+                            
+                            // 显示提交按钮
+                            submitBtn.style.display = 'block';
+                        } else {
+                            // 生成失败，显示错误信息
+                            questionList.innerHTML = '<div class="text-center" style="margin-top: 50px; color: #ff4d4f;"><i class="fa fa-exclamation-circle" style="font-size: 48px; margin-bottom: 20px;"></i><p>题目生成失败，请重试</p></div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Generate questions error:', error);
+                        // 模拟题目数据（仅用于演示）
+                        const mockQuestions = generateMockQuestions(questionType, count, difficulty);
+                        
+                        // 存储当前题目数据
+                        currentQuestions = mockQuestions;
+                        
+                        // 渲染题目列表
+                        renderQuestions(mockQuestions);
+                        
+                        // 显示提交按钮
+                        submitBtn.style.display = 'block';
+                    })
+                    .finally(() => {
+                        // 恢复按钮状态
+                        generateBtn.disabled = false;
+                        generateBtn.innerHTML = '<i class="fa fa-refresh"></i> 生成题目';
+                    });
+            }
+            
+            // 渲染题目列表
+            function renderQuestions(questions) {
+                if (!questions || questions.length === 0) {
+                    questionList.innerHTML = '<div class="text-center" style="margin-top: 50px; color: #999;"><i class="fa fa-info-circle" style="font-size: 48px; margin-bottom: 20px;"></i><p>暂无题目</p></div>';
+                    return;
+                }
+                
+                let html = '';
+                
+                questions.forEach((question, index) => {
+                    html += `
+                        <div class="question-item" data-question-id="${question.id}">
+                            <h3 class="question-title">${index + 1}. ${question.content}</h3>
+                    `;
+                    
+                    switch (question.type) {
+                        case 'single_choice':
+                            html += `
+                                <div class="question-options">
+                                    ${question.options.map(option => `
+                                        <div class="option-item">
+                                            <label class="option-label">
+                                                <input type="radio" name="question_${question.id}" value="${option.id}" class="option-input">
+                                                <span class="option-text">${option.content}</span>
+                                            </label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                            break;
+                            
+                        case 'multiple_choice':
+                            html += `
+                                <div class="question-options">
+                                    ${question.options.map(option => `
+                                        <div class="option-item">
+                                            <label class="option-label">
+                                                <input type="checkbox" name="question_${question.id}" value="${option.id}" class="option-input">
+                                                <span class="option-text">${option.content}</span>
+                                            </label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                            break;
+                            
+                        case 'fill_blank':
+                            html += `
+                                <div class="question-fill">
+                                    <input type="text" class="fill-input" id="fill_${question.id}" placeholder="请输入答案">
+                                </div>
+                            `;
+                            break;
+                            
+                        case 'essay':
+                            html += `
+                                <div class="question-essay">
+                                    <textarea class="essay-textarea" id="essay_${question.id}" placeholder="请输入答案"></textarea>
+                                </div>
+                            `;
+                            break;
+                    }
+                    
+                    html += `
+                        </div>
+                    `;
+                });
+                
+                questionList.innerHTML = html;
+            }
+            
+            // 提交答案
+            function submitAnswers() {
+                // 收集答案
+                const answers = [];
+                
+                currentQuestions.forEach(question => {
+                    let answer = null;
+                    
+                    switch (question.type) {
+                        case 'single_choice':
+                            const radio = document.querySelector(`input[name="question_${question.id}"]:checked`);
+                            answer = radio ? radio.value : null;
+                            break;
+                            
+                        case 'multiple_choice':
+                            const checkboxes = document.querySelectorAll(`input[name="question_${question.id}"]:checked`);
+                            answer = Array.from(checkboxes).map(cb => cb.value);
+                            break;
+                            
+                        case 'fill_blank':
+                            const fillInput = document.getElementById(`fill_${question.id}`);
+                            answer = fillInput ? fillInput.value : null;
+                            break;
+                            
+                        case 'essay':
+                            const essayTextarea = document.getElementById(`essay_${question.id}`);
+                            answer = essayTextarea ? essayTextarea.value : null;
+                            break;
+                    }
+                    
+                    answers.push({
+                        id: question.id,
+                        type: question.type,
+                        answer: answer
+                    });
+                });
+                
+                // 验证是否所有题目都已作答
+                const unansweredQuestions = answers.filter(a => a.answer === null || (Array.isArray(a.answer) && a.answer.length === 0) || a.answer === '');
+                if (unansweredQuestions.length > 0) {
+                    alert(`还有 ${unansweredQuestions.length} 道题目未作答，请完成后再提交`);
+                    return;
+                }
+                
+                // 显示加载状态
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 提交中...';
+                
+                // 调用API提交答案
+                api.question.submitAnswers(answers)
+                    .then(data => {
+                        if (data.success && data.data) {
+                            // 显示得分
+                            scoreBox.style.display = 'block';
+                            scoreSpan.textContent = data.data.score;
+                            
+                            // 禁用所有答题控件
+                            disableAnswerControls();
+                            
+                            // 更改提交按钮文本
+                            submitBtn.innerHTML = '<i class="fa fa-check"></i> 已提交';
+                        } else {
+                            alert(data.message || '提交失败，请重试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Submit answers error:', error);
+                        // 模拟评分（仅用于演示）
+                        const mockScore = calculateMockScore(answers);
+                        
+                        // 显示得分
+                        scoreBox.style.display = 'block';
+                        scoreSpan.textContent = mockScore;
+                        
+                        // 禁用所有答题控件
+                        disableAnswerControls();
+                        
+                        // 更改提交按钮文本
+                        submitBtn.innerHTML = '<i class="fa fa-check"></i> 已提交';
+                    });
+            }
+            
+            // 禁用答题控件
+            function disableAnswerControls() {
+                // 禁用单选框和复选框
+                const radioInputs = document.querySelectorAll('input[type="radio"]');
+                radioInputs.forEach(input => {
+                    input.disabled = true;
+                });
+                
+                const checkboxInputs = document.querySelectorAll('input[type="checkbox"]');
+                checkboxInputs.forEach(input => {
+                    input.disabled = true;
+                });
+                
+                // 禁用文本输入框和文本域
+                const textInputs = document.querySelectorAll('input[type="text"]');
+                textInputs.forEach(input => {
+                    input.disabled = true;
+                });
+                
+                const textareas = document.querySelectorAll('textarea');
+                textareas.forEach(textarea => {
+                    textarea.disabled = true;
+                });
+            }
+            
+            // 生成模拟题目数据（仅用于演示）
+            function generateMockQuestions(type, count, difficulty) {
+                const questions = [];
+                const difficultyText = difficulty === 'simple' ? '简单' : (difficulty === 'medium' ? '中等' : '困难');
+                
+                for (let i = 1; i <= count; i++) {
+                    let question = {
+                        id: `q_${i}`,
+                        type: type,
+                        content: `这是一道${difficultyText}的${getQuestionTypeText(type)}（示例题目 ${i}）`,
+                        score: 10
+                    };
+                    
+                    switch (type) {
+                        case 'single_choice':
+                            question.options = [
+                                { id: 'A', content: '选项 A' },
+                                { id: 'B', content: '选项 B' },
+                                { id: 'C', content: '选项 C' },
+                                { id: 'D', content: '选项 D' }
+                            ];
+                            question.answer = 'A';
+                            break;
+                            
+                        case 'multiple_choice':
+                            question.options = [
+                                { id: 'A', content: '选项 A' },
+                                { id: 'B', content: '选项 B' },
+                                { id: 'C', content: '选项 C' },
+                                { id: 'D', content: '选项 D' }
+                            ];
+                            question.answer = ['A', 'C'];
+                            break;
+                            
+                        case 'fill_blank':
+                            question.answer = '答案';
+                            break;
+                            
+                        case 'essay':
+                            question.answer = '这是解答题的参考答案，实际评分会根据关键词和答题要点进行。';
+                            break;
+                    }
+                    
+                    questions.push(question);
+                }
+                
+                return questions;
+            }
+            
+            // 获取题型文本
+            function getQuestionTypeText(type) {
+                switch (type) {
+                    case 'single_choice': return '单选题';
+                    case 'multiple_choice': return '多选题';
+                    case 'fill_blank': return '填空题';
+                    case 'essay': return '解答题';
+                    default: return '未知题型';
+                }
+            }
+            
+            // 计算模拟得分（仅用于演示）
+            function calculateMockScore(answers) {
+                // 简单模拟评分，实际应该由后端完成
+                let totalScore = 0;
+                let correctCount = 0;
+                
+                answers.forEach((answer, index) => {
+                    const question = currentQuestions[index];
+                    let isCorrect = false;
+                    
+                    switch (question.type) {
+                        case 'single_choice':
+                            isCorrect = answer.answer === question.answer;
+                            break;
+                            
+                        case 'multiple_choice':
+                            if (Array.isArray(answer.answer) && Array.isArray(question.answer)) {
+                                isCorrect = answer.answer.length === question.answer.length && 
+                                            answer.answer.every(a => question.answer.includes(a));
+                            }
+                            break;
+                            
+                        case 'fill_blank':
+                            // 填空题简单比较，实际应该更复杂
+                            isCorrect = answer.answer && question.answer && 
+                                        answer.answer.toLowerCase() === question.answer.toLowerCase();
+                            break;
+                            
+                        case 'essay':
+                            // 解答题给一半分数，实际应该由AI评分
+                            isCorrect = answer.answer && answer.answer.length > 50;
+                            break;
+                    }
+                    
+                    if (isCorrect) {
+                        correctCount++;
+                        totalScore += question.score;
+                    } else if (question.type === 'essay' && answer.answer && answer.answer.length > 0) {
+                        // 解答题部分得分
+                        totalScore += question.score * 0.5;
+                    }
+                });
+                
+                // 四舍五入到整数
+                return Math.round(totalScore);
+            }
+            
+            // 生成题目按钮点击事件
+            generateBtn.addEventListener('click', generateQuestions);
+            
+            // 提交答案按钮点击事件
+            submitBtn.addEventListener('click', submitAnswers);
+            
+            // 初始化页面
+            loadKnowledgePoints();
+        });
+    </script>
+</body>
+</html>

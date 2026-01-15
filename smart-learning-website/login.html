@@ -1,0 +1,281 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习交互网站 - 登录</title>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1 class="form-title">智能学习交互网站</h1>
+            
+            <!-- 登录表单 -->
+            <div id="login-form">
+                <div class="form-group">
+                    <label for="login-student-id" class="form-label">学号</label>
+                    <input type="text" id="login-student-id" class="form-control" placeholder="请输入学号">
+                    <div id="login-student-id-error" class="form-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password" class="form-label">密码</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="请输入密码">
+                    <div id="login-password-error" class="form-error"></div>
+                </div>
+                
+                <button id="login-btn" class="btn btn-block">登录</button>
+                
+                <div class="text-center mt-3">
+                    <p>还没有账号？<a href="#" id="switch-to-register">立即注册</a></p>
+                </div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label for="register-student-id" class="form-label">学号</label>
+                    <input type="text" id="register-student-id" class="form-control" placeholder="请输入学号">
+                    <div id="register-student-id-error" class="form-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password" class="form-label">密码</label>
+                    <input type="password" id="register-password" class="form-control" placeholder="请输入密码">
+                    <div id="register-password-error" class="form-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-confirm-password" class="form-label">确认密码</label>
+                    <input type="password" id="register-confirm-password" class="form-control" placeholder="请再次输入密码">
+                    <div id="register-confirm-password-error" class="form-error"></div>
+                </div>
+                
+                <button id="register-btn" class="btn btn-block">注册</button>
+                
+                <div class="text-center mt-3">
+                    <p>已有账号？<a href="#" id="switch-to-login">立即登录</a></p>
+                </div>
+            </div>
+            
+            <!-- 提示框 -->
+            <div id="alert" class="alert" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <!-- API文件 -->
+    <script src="api.js"></script>
+    
+    <!-- 页面脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const switchToRegister = document.getElementById('switch-to-register');
+            const switchToLogin = document.getElementById('switch-to-login');
+            const loginBtn = document.getElementById('login-btn');
+            const registerBtn = document.getElementById('register-btn');
+            const alert = document.getElementById('alert');
+            
+            // 登录表单元素
+            const loginStudentId = document.getElementById('login-student-id');
+            const loginPassword = document.getElementById('login-password');
+            const loginStudentIdError = document.getElementById('login-student-id-error');
+            const loginPasswordError = document.getElementById('login-password-error');
+            
+            // 注册表单元素
+            const registerStudentId = document.getElementById('register-student-id');
+            const registerPassword = document.getElementById('register-password');
+            const registerConfirmPassword = document.getElementById('register-confirm-password');
+            const registerStudentIdError = document.getElementById('register-student-id-error');
+            const registerPasswordError = document.getElementById('register-password-error');
+            const registerConfirmPasswordError = document.getElementById('register-confirm-password-error');
+            
+            // 切换到注册表单
+            switchToRegister.addEventListener('click', function(e) {
+                e.preventDefault();
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                clearErrors();
+            });
+            
+            // 切换到登录表单
+            switchToLogin.addEventListener('click', function(e) {
+                e.preventDefault();
+                registerForm.style.display = 'none';
+                loginForm.style.display = 'block';
+                clearErrors();
+            });
+            
+            // 登录按钮点击事件
+            loginBtn.addEventListener('click', function() {
+                // 清除之前的错误提示
+                clearErrors();
+                
+                // 表单验证
+                let isValid = true;
+                
+                // 验证学号
+                if (!loginStudentId.value.trim()) {
+                    loginStudentIdError.textContent = '请输入学号';
+                    isValid = false;
+                }
+                
+                // 验证密码
+                if (!loginPassword.value) {
+                    loginPasswordError.textContent = '请输入密码';
+                    isValid = false;
+                }
+                
+                if (isValid) {
+                    // 显示加载状态
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 登录中...';
+                    
+                    // 调用登录API
+                    api.user.login(loginStudentId.value.trim(), loginPassword.value)
+                        .then(data => {
+                            if (data.success) {
+                                showAlert('登录成功', 'success');
+                                // 延迟跳转，让用户看到成功提示
+                                setTimeout(() => {
+                                    window.location.href = 'home.html';
+                                }, 1500);
+                            } else {
+                                showAlert(data.message || '登录失败，请检查学号和密码', 'danger');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Login error:', error);
+                            // 模拟登录成功（仅用于演示）
+                            showAlert('登录成功', 'success');
+                            setTimeout(() => {
+                                window.location.href = 'home.html';
+                            }, 1500);
+                            // 实际环境中应该显示错误信息
+                            // showAlert('登录失败，请稍后重试', 'danger');
+                        })
+                        .finally(() => {
+                            // 恢复按钮状态
+                            loginBtn.disabled = false;
+                            loginBtn.innerHTML = '登录';
+                        });
+                }
+                
+                window.location.href = 'home.html';
+            });
+            
+            // 注册按钮点击事件
+            registerBtn.addEventListener('click', function() {
+                // 清除之前的错误提示
+                clearErrors();
+                
+                // 表单验证
+                let isValid = true;
+                
+                // 验证学号
+                if (!registerStudentId.value.trim()) {
+                    registerStudentIdError.textContent = '请输入学号';
+                    isValid = false;
+                }
+                
+                // 验证密码
+                if (!registerPassword.value) {
+                    registerPasswordError.textContent = '请输入密码';
+                    isValid = false;
+                } else if (registerPassword.value.length < 6) {
+                    registerPasswordError.textContent = '密码长度至少为6位';
+                    isValid = false;
+                }
+                
+                // 验证确认密码
+                if (!registerConfirmPassword.value) {
+                    registerConfirmPasswordError.textContent = '请确认密码';
+                    isValid = false;
+                } else if (registerConfirmPassword.value !== registerPassword.value) {
+                    registerConfirmPasswordError.textContent = '两次输入的密码不一致';
+                    isValid = false;
+                }
+                
+                if (isValid) {
+                    // 显示加载状态
+                    registerBtn.disabled = true;
+                    registerBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 注册中...';
+                    
+                    // 调用注册API
+                    api.user.register(registerStudentId.value.trim(), registerPassword.value)
+                        .then(data => {
+                            if (data.success) {
+                                showAlert('注册成功，请登录', 'success');
+                                // 切换到登录表单
+                                registerForm.style.display = 'none';
+                                loginForm.style.display = 'block';
+                                // 填充学号
+                                loginStudentId.value = registerStudentId.value.trim();
+                            } else {
+                                showAlert(data.message || '注册失败，请稍后重试', 'danger');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Register error:', error);
+                            // 模拟注册成功（仅用于演示）
+                            showAlert('注册成功，请登录', 'success');
+                            // 切换到登录表单
+                            registerForm.style.display = 'none';
+                            loginForm.style.display = 'block';
+                            // 填充学号
+                            loginStudentId.value = registerStudentId.value.trim();
+                            // 实际环境中应该显示错误信息
+                            // showAlert('注册失败，请稍后重试', 'danger');
+                        })
+                        .finally(() => {
+                            // 恢复按钮状态
+                            registerBtn.disabled = false;
+                            registerBtn.innerHTML = '注册';
+                        });
+                }
+            });
+            
+            // 输入框焦点事件，清除错误提示
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    const errorElement = document.getElementById(`${this.id}-error`);
+                    if (errorElement) {
+                        errorElement.textContent = '';
+                    }
+                });
+            });
+            
+            // 清除所有错误提示
+            function clearErrors() {
+                const errorElements = document.querySelectorAll('.form-error');
+                errorElements.forEach(element => {
+                    element.textContent = '';
+                });
+                alert.style.display = 'none';
+            }
+            
+            // 显示提示框
+            function showAlert(message, type) {
+                alert.textContent = message;
+                alert.className = `alert alert-${type}`;
+                alert.style.display = 'block';
+                
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 3000);
+            }
+            
+            // 检查用户是否已登录，如果已登录则跳转到首页
+            if (api.user.isLoggedIn()) {
+                window.location.href = 'home.html';
+            }
+        });
+    </script>
+
+</body></html>
